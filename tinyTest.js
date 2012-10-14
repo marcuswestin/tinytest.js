@@ -51,11 +51,20 @@ function run(reporter) {
 		var test = run.currentTest = tests.shift()
 		reporter.onTestStart(test.name)
 		var startTime = now()
-		test.fn(function(err) {
+		test.didFinish = false
+		test.timeout = 250
+		test.fn.call(test, function(err) {
+			test.didFinish = true
+			clearTimeout(test.timer)
 			if (err) { return fail(err) }
 			reporter.onTestDone(test.name, now() - startTime)
 			setTimeout(runNextTest, 0)
 		})
+		if (test.didFinish) { return }
+		if (test.timeout <= 0) { return }
+		test.timer = setTimeout(function() {
+			fail(new Error("Timed out"))
+		}, test.timeout)
 	}
 }
 function fail(err) {
