@@ -93,7 +93,7 @@ function waitFor(selector, callback) {
 	check()
 	function check() {
 		var $result = $(selector)
-		if (!$result) { setTimeout(check, 50) }
+		if (!$result.length) { return setTimeout(check, 50) }
 		callback($result)
 	}
 }
