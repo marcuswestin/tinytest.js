@@ -28,6 +28,9 @@ function then(testName, fn) {
 // Run
 function now() { return new Date().getTime() }
 function run(reporter) {
+	run.failed = false
+	run.reporter = reporter
+	
 	var tests = []
 	descend('', suites)
 	function descend(base, thunk) {
@@ -41,19 +44,24 @@ function run(reporter) {
 	}
 	
 	var totalStartTime = now()
-	var currentTest
 	runNextTest()
 	function runNextTest() {
+		if (run.failed) { return }
 		if (!tests.length) { return reporter.onAllDone(now() - totalStartTime) }
-		currentTest = tests.shift()
-		reporter.onTestStart(currentTest.name)
+		var test = run.currentTest = tests.shift()
+		reporter.onTestStart(test.name)
 		var startTime = now()
-		currentTest.fn(function(err) {
-			if (err) { return reporter.onTestFail(currentTest.name, err) }
-			reporter.onTestDone(currentTest.name, now() - startTime)
+		test.fn(function(err) {
+			if (err) { return fail(err) }
+			reporter.onTestDone(test.name, now() - startTime)
 			setTimeout(runNextTest, 0)
 		})
 	}
+}
+function fail(err) {
+	run.failed = true
+	run.reporter.onTestFail(run.currentTest.name, err)
+	throw err
 }
 
 var isTouch
@@ -62,8 +70,9 @@ catch (e) { isTouch = false }
 
 // Assertion utils
 function is(a, b) {
-	if (arguments.length == 1) { return !!a }
-	else { return objectIdentical(a, b) }
+	var success = (arguments.length == 1 ? !!a : objectIdentical(a, b))
+	if (success) { return }
+	fail('"is" failed')
 }
 
 // Dom utils
