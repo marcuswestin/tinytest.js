@@ -7,6 +7,7 @@ module.exports = {
 	is:is,
 	// DOM utils
 	tap:tap,
+	count:count,
 	waitFor:waitFor
 }
 
@@ -72,6 +73,11 @@ function tap(selector, callback) {
 		var $el = $(selector)
 		events.forEach(function($event) { $el.trigger($event) })
 		callback && callback()
+	})
+}
+function count(selector, callback) {
+	waitFor(selector, function() {
+		callback($(selector).length)
 	})
 }
 function waitFor(selector, callback) {
