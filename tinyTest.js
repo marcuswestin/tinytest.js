@@ -29,17 +29,22 @@ function then(testName, fn) {
 // Run
 function now() { return new Date().getTime() }
 function run(reporter) {
+	if (!reporter) { reporter = defaultReporter }
+	for (var key in defaultReporter) {
+		reporter[key] = reporter[key] || defaultReporter[key]
+	}
+	
 	run.failed = false
 	run.reporter = reporter
 	
 	var tests = []
-	descend('', suites)
-	function descend(base, thunk) {
+	descend([], suites)
+	function descend(stack, thunk) {
 		for (var name in thunk) {
 			if (typeof thunk[name] == 'function') {
-				tests.push({ name:base+' '+name, fn:thunk[name] })
+				tests.push({ stack:stack.concat(name), fn:thunk[name] })
 			} else {
-				descend(base + ' ' + name, thunk[name])
+				descend(stack.concat(name), thunk[name])
 			}
 		}
 	}
@@ -48,9 +53,9 @@ function run(reporter) {
 	runNextTest()
 	function runNextTest() {
 		if (run.failed) { return }
-		if (!tests.length) { return reporter.onAllDone(now() - totalStartTime) }
+		if (!tests.length) { return run.reporter.onAllDone(now() - totalStartTime) }
 		var test = run.currentTest = tests.shift()
-		reporter.onTestStart(test.name)
+		run.reporter.onTestStart(test.stack)
 		var startTime = now()
 		test.didFinish = false
 		test.timeout = 250
@@ -58,7 +63,7 @@ function run(reporter) {
 			test.didFinish = true
 			clearTimeout(test.timer)
 			if (err) { return fail(err) }
-			reporter.onTestDone(test.name, now() - startTime)
+			run.reporter.onTestDone(test.stack, now() - startTime)
 			setTimeout(runNextTest, 0)
 		})
 		if (test.didFinish) { return }
@@ -70,7 +75,7 @@ function run(reporter) {
 }
 function fail(err) {
 	run.failed = true
-	run.reporter.onTestFail(run.currentTest.name, err)
+	run.reporter.onTestFail(run.currentTest.stack, err)
 	throw err
 }
 
@@ -128,4 +133,14 @@ function objectIdentical(a, b) {
 		return result
 	}
 	return JSON.stringify(sort(a)) === JSON.stringify(sort(b))
+}
+
+var defaultReporter = {
+	onTestStart:function(stack) { console.log("Test:", stack.join(' | ')) },
+	onTestDone: function(stack, duration) { console.log('Done: ', (duration+'ms')) },
+	onTestFail: function(stack, err) { console.error("ERROR", stack.join(' | '), err) },
+	onAllDone: function(duration) {
+		console.log("All Done:", (duration+'ms'))
+		process.exit(0)
+	}
 }
