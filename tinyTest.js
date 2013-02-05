@@ -1,10 +1,11 @@
 module.exports = {
 	// Setup & Run
-	describe:describe,
+	setup:setup,
 	then:then,
 	run:run,
 	// Assertion utils
 	is:is,
+	check:check,
 	// DOM utils
 	tap:tap,
 	count:count,
@@ -14,7 +15,7 @@ module.exports = {
 // Setup
 var suites = {}
 var setupStack = [suites]
-function describe(name, fn) {
+function setup(name, fn) {
 	var thunk = {}
 	setupStack[0][name] = thunk
 	setupStack.unshift(thunk)
@@ -83,6 +84,7 @@ function is(a, b) {
 	if (success) { return }
 	fail('"is" failed')
 }
+function check(err) { if (err) { throw err } }
 
 // Dom utils
 function tap(selector, callback) {
