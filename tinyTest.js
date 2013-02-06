@@ -5,6 +5,7 @@ module.exports = {
 	run:run,
 	// Assertion utils
 	is:is,
+	has:has,
 	check:check,
 	// DOM utils
 	tap:tap,
@@ -62,7 +63,7 @@ function run(reporter) {
 		test.fn.call(test, function(err) {
 			test.didFinish = true
 			clearTimeout(test.timer)
-			if (err) { return fail(err) }
+			check(err)
 			run.reporter.onTestDone(test.stack, now() - startTime)
 			setTimeout(runNextTest, 0)
 		})
@@ -74,6 +75,7 @@ function run(reporter) {
 	}
 }
 function fail(err) {
+	if (typeof err == 'string') { err = new Error(err) }
 	run.failed = true
 	run.reporter.onTestFail(run.currentTest.stack, err)
 	throw err
@@ -84,12 +86,18 @@ try { document.createEvent("TouchEvent"); isTouch = ('ontouchstart' in window) }
 catch (e) { isTouch = false }
 
 // Assertion utils
+function check(err) { if (err) { fail(err) } }
 function is(a, b) {
 	var success = (arguments.length == 1 ? !!a : objectIdentical(a, b))
 	if (success) { return }
 	fail('"is" failed')
 }
-function check(err) { if (err) { throw err } }
+function has(obj, props) {
+	for (var key in props) {
+		if (objectIdentical(obj[key], props[key])) { continue }
+		fail('"has" failed on "'+key+'": '+JSON.stringify(obj[key])+' '+JSON.stringify(props[key])+'')
+	}
+}
 
 // Dom utils
 function tap(selector, callback) {
@@ -106,10 +114,10 @@ function count(selector, callback) {
 	})
 }
 function waitFor(selector, callback) {
-	check()
-	function check() {
+	checkNow()
+	function checkNow() {
 		var $result = $(selector)
-		if (!$result.length) { return setTimeout(check, 50) }
+		if (!$result.length) { return setTimeout(checkNow, 50) }
 		callback($result)
 	}
 }
