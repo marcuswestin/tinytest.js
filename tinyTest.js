@@ -94,6 +94,7 @@ function is(a, b) {
 	fail('"is" failed')
 }
 function has(obj, props) {
+	if (obj == null) { return fail('"has" failed with null object') }
 	for (var key in props) {
 		if (objectIdentical(obj[key], props[key])) { continue }
 		fail('"has" failed on "'+key+'": '+JSON.stringify(obj[key])+' '+JSON.stringify(props[key])+'')
