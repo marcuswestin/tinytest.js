@@ -7,6 +7,7 @@ module.exports = {
 	is:is,
 	has:has,
 	check:check,
+	fail:fail,
 	// DOM utils
 	tap:tap,
 	count:count,
