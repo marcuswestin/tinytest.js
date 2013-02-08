@@ -1,4 +1,4 @@
-module.exports = {
+var tinyTest = module.exports = {
 	// Setup & Run
 	setup:setup,
 	then:then,
@@ -11,7 +11,9 @@ module.exports = {
 	// DOM utils
 	tap:tap,
 	count:count,
-	waitFor:waitFor
+	waitFor:waitFor,
+	// defaults
+	timeout: 250
 }
 
 // Setup
@@ -60,7 +62,7 @@ function run(reporter) {
 		run.reporter.onTestStart(test.stack)
 		var startTime = now()
 		test.didFinish = false
-		test.timeout = 250
+		test.timeout = tinyTest.timeout
 		test.fn.call(test, function(err) {
 			test.didFinish = true
 			clearTimeout(test.timer)
@@ -69,9 +71,9 @@ function run(reporter) {
 			setTimeout(runNextTest, 0)
 		})
 		if (test.didFinish) { return }
-		if (test.timeout <= 0) { return }
+		if (!test.timeout || test.timeout <= 0) { return }
 		test.timer = setTimeout(function() {
-			fail(new Error("Timed out"))
+			fail(new Error("Timed out after "+test.timeout+"ms"))
 		}, test.timeout)
 	}
 }
