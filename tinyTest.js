@@ -1,6 +1,6 @@
 var tinyTest = module.exports = {
 	// Setup & Run
-	setup:setup,
+	makeScenario:makeScenario,
 	then:then,
 	run:run,
 	// Assertion utils
@@ -18,16 +18,17 @@ var tinyTest = module.exports = {
 
 // Setup
 var suites = {}
-var setupStack = [suites]
-function setup(name, fn) {
+var scenarioStack = [suites]
+function makeScenario(name, fn) {
 	var thunk = {}
-	setupStack[0][name] = thunk
-	setupStack.unshift(thunk)
+	scenarioStack[0][name] = thunk
+	scenarioStack.unshift(thunk)
 	fn()
-	setupStack.shift()
+	scenarioStack.shift()
 }
 function then(testName, fn) {
-	setupStack[0][testName] = fn
+	if (fn.length != 1) { throw new Error("Test function "+testName+" must take a `done` function argument") }
+	scenarioStack[0][testName] = fn
 }
 
 // Run
@@ -92,8 +93,8 @@ catch (e) { isTouch = false }
 function check(err) { if (err) { fail(err) } }
 function is(a, b) {
 	var success = (arguments.length == 1 ? !!a : objectIdentical(a, b))
-	if (success) { return }
-	fail('"is" failed')
+	if (success) { return a }
+	fail('"is" failed: '+(a+ ' '+b))
 }
 function has(obj, props) {
 	if (obj == null) { return fail('"has" failed with null object') }
