@@ -11,7 +11,7 @@ var tinyTest = module.exports = {
 	// DOM utils
 	tap:tap,
 	count:count,
-	waitFor:waitFor,
+	waitForEl:waitForEl,
 	// defaults
 	timeout: 250
 }
@@ -106,7 +106,7 @@ function has(obj, props) {
 
 // Dom utils
 function tap(selector, callback) {
-	waitFor(selector, function() {
+	waitForEl(selector, function() {
 		var events = isTouch ? [$.Event('touchstart'), $.Event('touchend')] : [$.Event('mousedown'), $.Event('mouseup'), $.Event('click')]
 		var $el = $(selector)
 		events.forEach(function($event) { $el.trigger($event) })
@@ -114,11 +114,11 @@ function tap(selector, callback) {
 	})
 }
 function count(selector, callback) {
-	waitFor(selector, function() {
+	waitForEl(selector, function() {
 		callback($(selector).length)
 	})
 }
-function waitFor(selector, callback) {
+function waitForEl(selector, callback) {
 	checkNow()
 	function checkNow() {
 		var $result = $(selector)
