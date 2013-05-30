@@ -17,18 +17,15 @@ var tinyTest = module.exports = {
 }
 
 // Setup
-var suites = {}
-var scenarioStack = [suites]
-function makeScenario(name, fn) {
-	var thunk = {}
-	scenarioStack[0][name] = thunk
-	scenarioStack.unshift(thunk)
+var allTests = []
+var currentScenarioName
+function makeScenario(scenarioName, fn) {
+	currentScenarioName = scenarioName
 	fn()
-	scenarioStack.shift()
 }
 function then(testName, fn) {
 	if (fn.length != 1) { throw new Error("Test function "+testName+" must take a `done` function argument") }
-	scenarioStack[0][testName] = fn
+	allTests.push({ name:testName, scenario:currentScenarioName, fn:fn })
 }
 
 // Run
@@ -42,25 +39,26 @@ function run(reporter) {
 	run.failed = false
 	run.reporter = reporter
 	
-	var tests = []
-	descend([], suites)
-	function descend(stack, thunk) {
-		for (var name in thunk) {
-			if (typeof thunk[name] == 'function') {
-				tests.push({ stack:stack.concat(name), fn:thunk[name] })
-			} else {
-				descend(stack.concat(name), thunk[name])
-			}
-		}
-	}
-	
-	var totalStartTime = now()
+	var totalTime = 0
+	var scenarioTime = 0
 	runNextTest()
 	function runNextTest() {
 		if (run.failed) { return }
-		if (!tests.length) { return run.reporter.onAllDone(now() - totalStartTime) }
-		var test = run.currentTest = tests.shift()
-		run.reporter.onTestStart(test.stack)
+		if (!allTests.length) { return run.reporter.onAllDone(totalTime) }
+		var test = allTests.shift()
+		
+		if (run.currentScenario != test.scenario) {
+			if (run.currentScenario) {
+				run.reporter.onScenarioDone(run.currentScenario, scenarioTime)
+			}
+			scenarioTime = 0
+			run.reporter.onScenarioStart(test.scenario)
+		}
+		
+		run.currentTest = test
+		run.currentScenario = test.scenario
+		run.reporter.onTestStart(test.name, test.scenario)
+		
 		var startTime = now()
 		test.didFinish = false
 		test.timeout = tinyTest.timeout
@@ -68,7 +66,10 @@ function run(reporter) {
 			test.didFinish = true
 			clearTimeout(test.timer)
 			check(err)
-			run.reporter.onTestDone(test.stack, now() - startTime)
+			var testDuration = now() - startTime
+			run.reporter.onTestDone(test.name, testDuration, test.scenario)
+			totalTime += testDuration
+			scenarioTime += testDuration
 			setTimeout(runNextTest, 0)
 		})
 		if (test.didFinish) { return }
@@ -81,7 +82,7 @@ function run(reporter) {
 function fail(err) {
 	if (typeof err == 'string') { err = new Error(err) }
 	run.failed = true
-	run.reporter.onTestFail(run.currentTest.stack, err)
+	run.reporter.onTestFail(run.currentTest.scenario, run.currentTest.name, err)
 	throw err
 }
 
@@ -149,11 +150,62 @@ function objectIdentical(a, b) {
 }
 
 var defaultReporter = {
-	onTestStart:function(stack) { console.log("Test:", stack.join(' | ')) },
-	onTestDone: function(stack, duration) { console.log('Done: ', (duration+'ms')) },
-	onTestFail: function(stack, err) { console.error("ERROR", stack.join(' | '), err) },
+	onScenarioStart:function(scenario) {
+		console.log(('*** Scenario: '+scenario+' ***').black.bgWhite)
+	},
+	onTestStart:function(test) {
+		console.log("*** Test:".white, test.white)
+	},
+	onTestDone: function(test, duration) {
+		var durationStr = duration < 50 ? (duration+'ms').greenLight
+			: duration < 200 ? (duration+'ms').yellowLight
+			: (duration+'ms').redLight
+		console.log('Test done:'.greenLight, durationStr)
+	},
+	onScenarioDone: function(scenario, duration) {
+		console.log(('Scenario done: '+duration+'ms').green)
+	},
+	onTestFail: function(scenario, test, err) {
+		console.error("Test FAIL".red, scenario.red, test.red, err)
+	},
 	onAllDone: function(duration) {
-		console.log("All Done:", (duration+'ms'))
+		console.log("\n*** All Done:".green, (duration+'ms').green)
 		process.exit(0)
 	}
 }
+
+
+;(function colorizeNode(){
+	'use strict'
+	var colors = {
+		white:1, black:30, blue:34, pink:35, cyan:36,
+		
+		red:31, redLight:91,
+		green:32, greenLight:92,
+		yellow:33, yellowLight:93,
+		gray:90, grayLight:37,
+		
+		bgRed:41, bgRedLight:101,
+		bgGreen:42, bgGreenLight:102,
+		bgYellow:43, bgYellowLight:103,
+		bgBlue:44, bgLightBlue:104,
+		bgPink:45, bgPinkLight:105,
+		bgCyan:46, bgCyanLight:106,
+		bgGray:100, bgGrayLight:47,
+		bgWhite:107,
+		
+		underline:4, inverse:7
+	}
+	for (var colorName in colors) {
+		addPrototypeProperty(colorName, colors[colorName])
+	}
+	
+	function addPrototypeProperty(name, code) {
+		var prefix = '\u001b['
+		var reset = '\u001b[0m'
+		if (String.prototype[name]) { return }
+		Object.defineProperty(String.prototype, name, {
+			get: function() { return prefix + code + 'm' + this + reset }
+		})
+	}
+}())
