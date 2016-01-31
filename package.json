@@ -1,0 +1,24 @@
+{
+  "name": "tinytest",
+  "version": "0.0.2",
+  "description": "",
+  "main": "src/tinytest.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcuswestin/tinytest.js.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marcuswestin/tinytest.js/issues"
+  },
+  "homepage": "https://github.com/marcuswestin/tinytest.js#readme",
+  "dependencies": {
+    "asyncawait": "^1.0.2",
+    "colors": "^1.1.2",
+    "promise": "^7.1.1"
+  }
+}
