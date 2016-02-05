@@ -1,4 +1,5 @@
 require('colors')
+var defaults = require('lodash').defaults
 // global.Promise = require('promise/lib/es6-extensions')
 
 var async
@@ -23,8 +24,6 @@ module.exports = {
 	nextTick: nextTick,
 }
 
-var maxTestDuration = 1000
-
 var allTests = []
 var failedTests = []
 var currentTest
@@ -39,8 +38,9 @@ function _runNextTest() {
 	}
 	currentTest = allTests[i]
 	print('Run:', currentTest.name)
+	var opts = currentTest.opts
 	var t0 = new Date()
-	var failTimeout = setTimeout(function() { fail('Test timed out') }, maxTestDuration)
+	var failTimeout = setTimeout(function() { fail('Test timed out') }, opts.timeout)
 	if (currentTest.fn.length == 0) {
 		var asyncTestFn = async(currentTest.fn)
 		asyncTestFn().then(function() {
@@ -79,8 +79,18 @@ function _finish() {
 }
 
 
-function test(name, fn) {
-	allTests.push({ name:name, fn:fn })
+function test(name, opts, fn) {
+	if (arguments.length == 2 && typeof opts == 'function') {
+		fn = opts
+		delete opts
+	}
+	allTests.push({
+		name: name,
+		fn: fn,
+		opts: defaults(opts || {}, {
+			timeout: 1000
+		})
+	})
 }
 function assert(ok, msg) {
 	if (ok) { return }
