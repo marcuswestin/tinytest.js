@@ -6,7 +6,7 @@ var async
 var await
 var nextTick = function(fn) { setTimeout(fn, 0) }
 
-if (typeof(process) !== 'undefined' && process.title === 'node') {
+if (typeof(process) !== 'undefined' && process.title === 'node' && typeof(await) == 'undefined') {
 	// avoid browserify bundling with toString()
 	async = require('asyncawait/async'.toString())
 	await = require('asyncawait/await'.toString())
