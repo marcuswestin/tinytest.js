@@ -82,7 +82,7 @@ function _finish() {
 function test(name, opts, fn) {
 	if (arguments.length == 2 && typeof opts == 'function') {
 		fn = opts
-		delete opts
+		opts = undefined
 	}
 	allTests.push({
 		name: name,
