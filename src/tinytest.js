@@ -37,7 +37,7 @@ function _runNextTest() {
 		return
 	}
 	currentTest = allTests[i]
-	print('Run:', currentTest.name)
+	print(('Run test: '+currentTest.name).brightWhite)
 	var opts = currentTest.opts
 	var t0 = new Date()
 	var failTimeout = setTimeout(function() { fail('Test timed out') }, opts.timeout)
