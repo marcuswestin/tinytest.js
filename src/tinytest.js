@@ -1,5 +1,5 @@
 require('colors')
-var defaults = require('lodash').defaults
+var _ = require('lodash')
 // global.Promise = require('promise/lib/es6-extensions')
 
 var async
@@ -38,7 +38,9 @@ function _runNextTest() {
 		return
 	}
 	currentTest = allTests[i]
-	print(('Run test: '+currentTest.name).brightWhite)
+	var testStr = 'Run test: '+currentTest.name
+	print(_.repeat('_', testStr.length).brightWhite)
+	print(testStr.brightWhite)
 	var opts = currentTest.opts
 	var t0 = new Date()
 	var failTimeout = setTimeout(function() { fail('Test timed out') }, opts.timeout)
@@ -60,10 +62,10 @@ function _runNextTest() {
 		clearTimeout(failTimeout)
 		if (failErr) { throw failErr }
 		var durStr = duration+'ms'
-		durStr = (duration < 50 ? durStr.green
+		durStr = (duration < 50 ? durStr.brightGreen
 			: duration < 500 ? durStr.yellow
 			: durStr.red)
-		print('Pass'.green, durStr)
+		print('Pass'.brightGreen, durStr)
 		process.nextTick(_runNextTest)
 	}
 }
@@ -74,7 +76,9 @@ function _finish() {
 			print(('\t'+failedTests[i].name).red)
 		}
 	} else {
-		print('All done!'.green, allTests.length, 'tests passed.')
+		var doneStr = ['Done!', allTests.length, 'tests passed'].join(' ')
+		print(_.repeat('_', doneStr.length).green)
+		print(doneStr.green)
 	}
 	process.exit(0)
 }
@@ -88,7 +92,7 @@ function test(name, opts, fn) {
 	allTests.push({
 		name: name,
 		fn: fn,
-		opts: defaults(opts || {}, {
+		opts: _.defaults(opts || {}, {
 			timeout: 1000
 		})
 	})
