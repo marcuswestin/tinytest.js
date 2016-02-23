@@ -19,6 +19,7 @@ module.exports = {
 	checkErr: checkErr,
 	print: print,
 	assert: assert,
+	fail: fail,
 	await: await,
 	async: async,
 	nextTick: nextTick,
