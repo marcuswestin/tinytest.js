@@ -60,7 +60,9 @@ function _runNextTest() {
 	function _onTestDone(failErr) {
 		var duration = new Date() - t0
 		clearTimeout(failTimeout)
-		if (failErr) { throw failErr }
+		if (failErr) {
+			fail(failErr.stack ? failErr.stack : failErr.toString())
+		}
 		var durStr = duration+'ms'
 		durStr = (duration < 50 ? durStr.brightGreen
 			: duration < 500 ? durStr.yellow
@@ -112,11 +114,29 @@ function checkErr(err) {
 	}
 }
 
+var exitOnFail = true
 function fail(message) {
-	print('Test fail:'.red, currentTest.name+' - message:', message, '\n', new Error().stack)
 	failedTests.push(currentTest)
-	nextTick(_runNextTest)
-	throw new Error(['Test fail:'.red, currentTest.name+' - message:', message].join(' '))
+	if (exitOnFail) {
+		print('Test fail:'.red, currentTest.name+' - message:', message, '\n', _makeError().stack)
+		_finish()
+	} else {
+		nextTick(_runNextTest)
+		throw _makeError('\nTest failed:'.red, (currentTest.name).brightWhite, '\n', message.brightRed, '\n-----------'.red)
+	}
+}
+function _makeError() {
+	var args = [].slice.call(arguments)
+	var err = new Error(args.join(' '))
+	var lines = err.stack.split('\n')
+	// Remove all tinytest.js mentions from top of stack trace
+	var line0 = lines.shift()
+	while (lines[0].match('tinytest.js')) {
+		lines.shift()
+	}
+	lines.unshift(line0)
+	err.stack = lines.join('\n')
+	return err
 }
 
 function print() {
