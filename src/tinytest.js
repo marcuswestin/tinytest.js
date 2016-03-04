@@ -1,3 +1,4 @@
+global.Promise = require('bluebird')
 require('colors')
 var _ = require('lodash')
 // global.Promise = require('promise/lib/es6-extensions')
