@@ -1,18 +1,17 @@
 global.Promise = require('bluebird')
 require('colors')
 var _ = require('lodash')
-// global.Promise = require('promise/lib/es6-extensions')
 
-var async
-var await
+// var async
+// var await
 var nextTick = function(fn) { setTimeout(fn, 0) }
 
-if (typeof(process) !== 'undefined' && process.title === 'node' && typeof(await) == 'undefined') {
-	// avoid browserify bundling with toString()
-	async = require('asyncawait/async'.toString())
-	await = require('asyncawait/await'.toString())
-	nextTick = process.nextTick
-}
+// if (typeof(process) !== 'undefined' && process.title === 'node' && typeof(await) == 'undefined') {
+// 	// avoid browserify bundling with toString()
+// 	async = require('asyncawait/async'.toString())
+// 	await = require('asyncawait/await'.toString())
+// 	nextTick = process.nextTick
+// }
 
 module.exports = {
 	test: test,
@@ -21,8 +20,8 @@ module.exports = {
 	print: print,
 	assert: assert,
 	fail: fail,
-	await: await,
-	async: async,
+	// await: await,
+	// async: async,
 	nextTick: nextTick,
 }
 
@@ -46,7 +45,8 @@ function _runNextTest() {
 	var t0 = new Date()
 	var failTimeout = setTimeout(function() { fail('Test timed out') }, opts.timeout)
 	if (currentTest.fn.length == 0) {
-		var asyncTestFn = async(currentTest.fn)
+		// var asyncTestFn = async(currentTest.fn)
+		var asyncTestFn = currentTest.fn
 		asyncTestFn().then(function() {
 			_onTestDone(null)
 		}).catch(function(failErr) {
