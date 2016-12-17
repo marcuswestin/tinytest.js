@@ -1,117 +1,170 @@
-require('colors')
-// global.Promise = require('promise/lib/es6-extensions')
+var colour = require('colour')
 
-var async
-var await
-var nextTick = function(fn) { setTimeout(fn, 0) }
-
-if (typeof(process) !== 'undefined' && process.title === 'node') {
-	// avoid browserify bundling with toString()
-	async = require('asyncawait/async'.toString())
-	await = require('asyncawait/await'.toString())
-	nextTick = process.nextTick
-}
-
-module.exports = {
-	test: test,
-	check: check,
-	checkErr: checkErr,
+var tinytest = module.exports = {
 	print: print,
 	assert: assert,
-	await: await,
-	async: async,
-	nextTick: nextTick,
+	test: test,
+	noConflict: noConflict,
+
+	outputEl: null,
+	maxDuration: 150
 }
 
-var maxTestDuration = 1000
+var nextTick = function(fn) { setTimeout(fn, 0) }
+var global = (function() { return this })();
 
-var allTests = []
-var failedTests = []
-var currentTest
-var i = -1
-nextTick(_runNextTest)
-
-function _runNextTest() {
-	i += 1
-	if (i == allTests.length) {
-		_finish()
-		return
-	}
-	currentTest = allTests[i]
-	print('Run:', currentTest.name)
-	var t0 = new Date()
-	var failTimeout = setTimeout(function() { fail('Test timed out') }, maxTestDuration)
-	if (currentTest.fn.length == 0) {
-		var asyncTestFn = async(currentTest.fn)
-		asyncTestFn().then(function() {
-			_onTestDone(null)
-		}).catch(function(failErr) {
-			_onTestDone(failErr)
-		})
-	} else {
-		currentTest.fn(function(err) {
-			_onTestDone(err)
-		})
-	}
-	
-	function _onTestDone(failErr) {
-		var duration = new Date() - t0
-		clearTimeout(failTimeout)
-		if (failErr) { throw failErr }
-		var durStr = duration+'ms'
-		durStr = (duration < 50 ? durStr.green
-			: duration < 500 ? durStr.yellow
-			: durStr.red)
-		print('Pass'.green, durStr)
-		process.nextTick(_runNextTest)
+function assert(ok, msg) {
+	if (!ok) {
+		throw new Error('assert failed' + (msg ? ': ' + msg : ''))
 	}
 }
-function _finish() {
-	if (failedTests.length) {
-		print((failedTests.length + ' tests failed:').red)
-		for (var i=0; i<failedTests.length; i++) {
-			print(('\t'+failedTests[i].name).red)
-		}
-	} else {
-		print('All done!'.green, allTests.length, 'tests passed.')
-	}
-	process.exit(0)
-}
-
 
 function test(name, fn) {
-	allTests.push({ name:name, fn:fn })
-}
-function assert(ok, msg) {
-	if (ok) { return }
-	fail('assert failed' + (msg ? ': ' + msg : ''))
-}
-function check(truthy) {
-	if (!truthy) {
-		fail('Check failed')
-	}
-}
-function checkErr(err) {
-	if (err) {
-		fail('checkErr failed: '+err.toString())
-	}
+	runner.tests.push({ name:name, fn:fn })
 }
 
-function fail(message) {
-	print('Test fail:'.red, currentTest.name+' - message:', message, '\n', new Error().stack)
-	failedTests.push(currentTest)
-	nextTick(_runNextTest)
-	throw new Error(['Test fail:'.red, currentTest.name+' - message:', message].join(' '))
+// Environment specifics
+////////////////////////
+var isBrowser = (typeof global.window != 'undefined')
+if (isBrowser) {
+	colour.mode = 'browser'
+	window.addEventListener('error', function (err) {
+	    runner._onTestDone(e)
+	})
+	var oldOnError = (window.onerror || function() {})
+	window.onError = function(msg, url, line) {
+		runner._onTestDone(new Error(msg+' ('+url+':'+line+')'))
+		return oldOnError.apply(this, arguments)
+	}
+} else {
+	colour.mode = 'console'
+	process.on('uncaughtException', function (err) {
+		runner._onTestDone(err)
+	})
 }
 
 function print() {
+	var args = Array.prototype.slice.call(arguments, 0)
+	var msg = args.join(' ')
 	console.log.apply(console, arguments)
+	if (isBrowser) {
+		if (!tinytest.outputEl) {
+			tinytest.outputEl = document.createElement('div')
+			tinytest.outputEl.style = 'font-family:monaco,sans-serif; font-size:12px; padding:10px; background-color:black; color:white;'
+			document.body.appendChild(tinytest.outputEl)
+		}
+		tinytest.outputEl.appendChild(document.createElement('div')).innerHTML = msg.replace(/\n/g, '<br/>')
+	}
 }
 
-function isGenerator(fn) {
-    return fn && fn.constructor.name === 'GeneratorFunction';
+// Exposed globals and noConflict
+/////////////////////////////////
+var globals = {
+	_old: {},
+	assert: assert,
+	test: test
 }
-function isPromise(obj) {
-	// return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
-	return obj && obj.constructor.name == 'Promise'
+function exposeGlobals() {
+	for (var key in globals) {
+		if (key != '_old' && globals.hasOwnProperty(key)) {
+			globals._old[key] = global[key]
+			this[key] = globals[key]
+		}
+	}
 }
+function noConflict() {
+	for (var key in globals) {
+		if (key != '_old' && globals.hasOwnProperty(key)) {
+			this[key] = globals._old[key]
+		}
+	}
+}
+
+// Internal
+///////////
+colour.uninstall()
+var grey = colour.grey
+var green = colour.green
+var yellow = colour.yellow
+var red = colour.red
+
+var runner = {
+	tests: [],
+	current: null,
+	testIndex: -1,
+	
+	_runNextTest: function() {
+		runner.testIndex += 1
+		if (runner.testIndex == runner.tests.length) {
+			runner._finish()
+			return
+		}
+		
+		runner.current = runner.tests[runner.testIndex]
+		print(grey('Run: '+runner.current.name))
+		runner.t0 = new Date()
+		runner.failTimeout = setTimeout(function() {
+			runner._onTestDone('Test timed out')
+		}, tinytest.maxDuration)
+		if (runner.current.fn.length == 1) {
+			runner.current.fn(function(err) {
+				runner._onTestDone(err)
+			})
+			return
+		}
+		
+		var res = runner.current.fn()
+		if (res) {
+			res.then(function() {
+				runner._onTestDone(null)
+			}).catch(function(err) {
+				runner._onTestDone(err)
+			})
+			return
+		}
+		
+		runner._onTestDone(null)
+	},
+	
+	_onTestDone: function(err) {
+		clearTimeout(runner.failTimeout)
+		var duration = new Date() - runner.t0
+		if (err) {
+			runner.current.failed = true
+			print(red('Fail ' + duration+'ms'), '\n', err.stack ? err.stack : err.toString())
+		} else {
+			var durColour = (duration < 50 ? green : duration < 350 ? yellow : red)
+			print(green('Pass'), durColour(duration+'ms'))
+		}
+		nextTick(runner._runNextTest)
+	},
+	
+	_finish: function() {
+		var failedTests = []
+		for (var i = 0; i < runner.tests.length; i++) {
+			if (runner.tests[i].failed) {
+				failedTests.push(runner.tests[i])
+			}
+		}
+		
+		if (failedTests.length) {
+			print(red(failedTests.length + ' tests failed:'))
+			for (var i = 0; i < failedTests.length; i++) {
+				print(red('\t'+failedTests[i].name))
+			}
+		} else {
+			print(green('All done!'), runner.tests.length, 'tests passed.')
+		}
+		_exit(0)
+	}
+}
+
+function _exit(exitCode) {
+	if (global.process && global.process.exit) {
+		process.exit(0)		
+	}
+}
+
+// Start
+exposeGlobals()
+nextTick(runner._runNextTest)

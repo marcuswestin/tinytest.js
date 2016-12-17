@@ -1,2 +1,3 @@
 test:
-	node --harmony-destructuring examples/examples.js
+	node examples/examples.js
+	bash examples/browser-runner.sh
