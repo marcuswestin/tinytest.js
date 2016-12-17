@@ -156,10 +156,11 @@ var runner = {
 			for (var i = 0; i < failedTests.length; i++) {
 				print(red('\t'+failedTests[i].name))
 			}
+			_exit(1)
 		} else {
 			print(green('All done!'), runner.tests.length, 'tests passed.')
+			_exit(0)
 		}
-		_exit(0)
 	}
 }
 
