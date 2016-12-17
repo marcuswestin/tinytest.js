@@ -62,7 +62,8 @@ function print() {
 var globals = {
 	_old: {},
 	assert: assert,
-	test: test
+	test: test,
+	print: print
 }
 function exposeGlobals() {
 	for (var key in globals) {
