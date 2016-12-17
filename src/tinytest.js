@@ -131,6 +131,9 @@ var runner = {
 		clearTimeout(runner.failTimeout)
 		var duration = new Date() - runner.t0
 		if (err) {
+			if (!runner.current) {
+				throw err
+			}
 			runner.current.failed = true
 			print(red('Fail ' + duration+'ms'), '\n', err.stack ? err.stack : err.toString())
 		} else {
