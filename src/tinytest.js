@@ -132,7 +132,8 @@ var runner = {
 	
 	_onTestDone: function(err) {
 		if (!runner.current) {
-			return print(red('Error during tests setup:'), '\n', err.stack ? err.stack : err.toString())
+			print(red('Error during tests setup:'), '\n', err.stack ? err.stack : err.toString())
+			exit(1)
 		}
 		clearTimeout(runner.failTimeout)
 		var duration = new Date() - runner.current.t0
