@@ -93,6 +93,7 @@ var red = colour.red
 
 var runner = {
 	tests: [],
+	failedTests: [],
 	current: null,
 	testIndex: -1,
 	t0: null,
@@ -133,7 +134,7 @@ var runner = {
 	_onTestDone: function(err) {
 		if (!runner.current) {
 			print(red('Error during tests setup:'), '\n', err.stack ? err.stack : err.toString())
-			exit(1)
+			_exit(1)
 		}
 		clearTimeout(runner.failTimeout)
 		var duration = new Date() - runner.current.t0
@@ -154,7 +155,6 @@ var runner = {
 	},
 	
 	_finish: function() {
-		runner.failedTests = []
 		for (var i = 0; i < runner.tests.length; i++) {
 			if (!runner.tests[i].result) {
 				runner.failedTests.push(runner.tests[i])
@@ -194,6 +194,6 @@ function _exit(exitCode) {
 	}
 
 	if (global.process && global.process.exit) {
-		process.exit(0)		
+		process.exit(exitCode)
 	}
 }
