@@ -81,6 +81,7 @@ function print() {
 		}
 		var messageHTML = args.join(' ').replace(/\n/g, '<br/>')
 		opts.outputEl.appendChild(document.createElement('div')).innerHTML = messageHTML
+		document.body.scrollTop = 99999999
 		
 		// Remove HTML from args for console.log
 		for (var key in args) {
