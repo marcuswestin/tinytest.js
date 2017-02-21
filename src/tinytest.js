@@ -110,8 +110,9 @@ var globals = {
 var opts = {
 	failFast: false,
 	outputEl: null,
-	maxDuration: 150
+	maxDuration: 750
 }
+	
 
 var global = (function() { return this })();
 for (var key in globals) {
