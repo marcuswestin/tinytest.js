@@ -29,13 +29,36 @@ function assign(obj, props1, props2, etc) {
 
 test.group = function(groupName, fn) {
 	var resetGroupName = runner.currentGroup
-	runner.currentGroup = groupName
+	runner.currentGroup = (runner.currentGroup ? runner.currentGroup + ' - ' : '') + groupName
+	runner.skipGroupStack.push(_shouldSkipCurrentGroup())
 	fn()
+	runner.skipGroupStack.pop()
 	runner.currentGroup = resetGroupName
 }
 
+test.skip = function(message) {
+	if (runner.current) {
+		runner.skipCurrentTest = true
+		
+	} else if (runner.currentGroup) {
+		runner.skipGroupStack[runner.skipGroupStack.length - 1] = true
+		
+	} else {
+		throw new Error('test.skip() called outside of test and group. ("'+message+'")')
+	}
+}
+
+function _shouldSkipCurrentGroup() {
+	return runner.skipGroupStack[runner.skipGroupStack.length - 1]
+}
+
 function test(name, fn) {
-	runner.tests.push({ name:runner.currentGroup+' - '+name, fn:fn })
+	if (_shouldSkipCurrentGroup()) {
+		runner.tests.push({ name:runner.currentGroup+' - '+name, shouldSkip:true })
+		
+	} else {
+		runner.tests.push({ name:runner.currentGroup+' - '+name, fn:fn })		
+	}
 }
 
 function assert(ok, msg1, msg2, etc) {
@@ -128,8 +151,10 @@ var red = colour.red
 
 var runner = {
 	currentGroup: '',
+	skipGroupStack: [],
 	tests: [],
 	failedTests: [],
+	skippedTests: [],
 	current: null,
 	testIndex: -1,
 	t0: null,
@@ -142,6 +167,13 @@ var runner = {
 		}
 		
 		runner.current = runner.tests[runner.testIndex]
+		if (runner.current.shouldSkip) {
+			runner.current.skipped = true
+			print(grey('Skip: '+runner.current.name))
+			runner._runNextTest()
+			return
+		}
+		
 		print(grey('Run: '+runner.current.name))
 		runner.current.t0 = new Date()
 		runner.failTimeout = setTimeout(function() {
@@ -185,7 +217,10 @@ var runner = {
 		}
 		clearTimeout(runner.failTimeout)
 		var duration = new Date() - runner.current.t0
-		if (err) {
+		if (runner.skipCurrentTest) {
+			runner.current.skipped = true
+			
+		} else if (err) {
 			assert(!runner.current.result)
 			var message = (err.stack ? err.stack : err.toString())
 			runner.current.result = false
@@ -196,38 +231,45 @@ var runner = {
 				runner._finish()
 				return
 			}
+			
 		} else {
 			runner.current.result = true
 			runner.current.duration = duration
 			var durColour = (duration < 50 ? green : duration < 350 ? yellow : red)
 			print(green('Pass'), durColour(duration+'ms'))
 		}
+		
+		runner.skipCurrentTest = false
 		nextTick(runner._runNextTest)
 	},
 	
 	_finish: function() {
-		var numSkipped = (runner.tests.length - runner.testIndex)
+		var numMissed = (runner.tests.length - runner.testIndex)
 
 		for (var i = 0; i < runner.tests.length; i++) {
-			if (!runner.tests[i].result) {
-				runner.failedTests.push(runner.tests[i])
+			var test = runner.tests[i]
+			if (test.skipped) {
+				runner.skippedTests.push(test)
+				
+			} else if (!test.result) {
+				runner.failedTests.push(test)
 			}
 		}
 		
-		if (numSkipped) {
-			print(yellow(numSkipped+' tests skipped'))
+		if (numMissed) {
+			print(yellow('Exited without running '+numMissed+' tests'))
 		}
 		if (runner.failedTests.length) {
-			print(red(runner.failedTests.length + ' tests failed:'))
-			for (var i = 0; i < runner.failedTests.length; i++) {
-				print(red('\t'+runner.failedTests[i].name))
-			}
+			print(red(runner.failedTests.length + ' tests failed'))
+		}
+		if (runner.skippedTests.length) {
+			print(yellow(runner.skippedTests.length + ' tests skipped'))
+		}
+		if (runner.failedTests.length) {
 			_exit(1)
-			
 		} else if (runner.tests.length == 0) {
-			print(yellow('No tests found.'))
+			print(yellow('No tests'))
 			_exit(1)
-			
 		} else {
 			print(green('All done!'), runner.tests.length, 'tests passed.')
 			_exit(0)
@@ -244,10 +286,13 @@ function _exit(exitCode) {
 		delete runner.tests[i].fn
 		delete runner.tests[i].t0
 	}
+	var numTests = runner.tests.length
+	var numFailed = numFailed
+	var numPassed = numTests - numPassed
 	global.global_test_results = {
-		total: runner.tests.length,
-		failed: runner.failedTests.length,
-		passed: runner.tests.length - runner.failedTests.length,
+		total: numTests,
+		failed: numFailed,
+		passed: numPassed,
 		duration: new Date() - runner.t0,
 		tests: runner.tests
 	}
