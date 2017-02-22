@@ -5,7 +5,8 @@ var tinytest = module.exports = {
 	test: test,
 	assert: assert,
 	print: print,
-	noConflict: noConflict
+	noConflict: noConflict,
+	hijackConsoleLog: hijackConsoleLog
 }
 
 function runTests(_opts) {
@@ -70,8 +71,6 @@ function assert(ok, msg1, msg2, etc) {
 }
 
 function print() {
-	var args = Array.prototype.slice.call(arguments, 0)
-	
 	// First, print into browser DOM
 	if (isBrowser) {
 		if (!opts.outputEl) {
@@ -79,18 +78,39 @@ function print() {
 			opts.outputEl.style = 'font-family:monaco,sans-serif; font-size:12px; padding:10px; background-color:black; color:white;'
 			document.body.appendChild(opts.outputEl)
 		}
-		var messageHTML = args.join(' ').replace(/\n/g, '<br/>')
-		opts.outputEl.appendChild(document.createElement('div')).innerHTML = messageHTML
-		document.body.scrollTop = 99999999
 		
-		// Remove HTML from args for console.log
-		for (var key in args) {
-			args[key] = colour.strip(args[key])
+		var args = Array.prototype.slice.call(arguments, 0)
+		for (var i = 0; i<args.length; i++) {
+			if (args[i] === undefined) {
+				args[i] = 'undefined'
+			}
+			if (typeof args[i] != 'string') {
+				args[i] = JSON.stringify(args[i])
+			}
+			args[i] = args[i].replace(/\n/g, '<br/>')
 		}
+		opts.outputEl.appendChild(document.createElement('div')).innerHTML = args.join(' ')
+		
+		if (!runner.hasFailedTest) {
+			document.documentElement.scrollTop = document.body.scrollTop = 99999999			
+		}
+		
+	} else {
+		log.apply(this, arguments)
 	}
-	
-	// Then, print to console
-	console.log.apply(console, args)
+}
+
+function hijackConsoleLog() {
+	console.log = function() {
+		var args = Array.prototype.slice.call(arguments)
+		args.unshift(grey('console.log():'))
+		print.apply(this, args)
+	}
+}
+
+log.consoleLog = console.log
+function log() {
+	log.consoleLog.apply(console, arguments)
 }
 
 function noConflict() {
@@ -229,6 +249,7 @@ var runner = {
 			runner.current.message = message
 			runner.current.duration = duration
 			print(red('Fail ' + duration+'ms'), '\n', message)
+			runner.hasFailedTest = true
 			if (opts.failFast) {
 				runner._finish()
 				return
