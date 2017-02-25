@@ -228,11 +228,7 @@ var runner = {
 			} else {
 				var promise = runner.current.fn()
 				if (promise) {
-					promise.then(function() {
-						runner._onTestDone(null)
-					}).catch(function(err) {
-						runner._onTestDone(err)
-					})
+					promise.then(runner._onTestDone, runner._onTestDone)
 
 				} else {
 					runner._onTestDone()
