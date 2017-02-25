@@ -77,7 +77,13 @@ function print() {
 	if (isBrowser) {
 		if (!opts.outputEl) {
 			opts.outputEl = document.createElement('div')
-			opts.outputEl.style = 'font-family:monaco,sans-serif; font-size:12px; padding:10px; background-color:black; color:white;'
+			assign(opts.outputEl.style, {
+				fontFamily: 'monaco,sans-serif',
+				fontSize: '12px',
+				padding: '10px',
+				background: 'black',
+				color: 'white'
+			})
 			document.body.appendChild(opts.outputEl)
 		}
 		
