@@ -65,8 +65,10 @@ function test(name, fn) {
 function assert(ok, msg1, msg2, etc) {
 	if (!ok) {
 		var msg = Array.prototype.slice.call(arguments, 1).join(' ')
+		var text = ('assert failed' + (msg ? ': ' + msg : ''))
+		print(C.red(text))
 		debugger
-		throw new Error('assert failed' + (msg ? ': ' + msg : ''))
+		throw new Error(text)
 	}
 }
 
