@@ -164,9 +164,11 @@ var isBrowser = (typeof global.window != 'undefined')
 // Set up global error handling
 ///////////////////////////////
 if (isBrowser) {
-	window.addEventListener('error', function (e) {
-	    runner._onTestDone(e.error ? e.error : e)
-	})
+	if (window.addEventListener) {
+		window.addEventListener('error', function (e) {
+		    runner._onTestDone(e.error ? e.error : e)
+		}, false)		
+	}
 	var oldOnError = (window.onerror || function() {})
 	window.onError = function(msg, url, line) {
 		runner._onTestDone(new Error(msg+' ('+url+':'+line+')'))
