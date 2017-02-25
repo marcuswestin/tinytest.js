@@ -116,6 +116,12 @@ function hijackConsoleLog() {
 	}
 }
 
+var global = (function() { return this })();
+
+if (!global.console) {
+	console = {}
+	hijackConsoleLog()
+}
 log.consoleLog = console.log
 function log() {
 	log.consoleLog.apply(console, arguments)
@@ -142,7 +148,6 @@ var opts = {
 }
 	
 
-var global = (function() { return this })();
 for (var key in globals) {
 	if (key != '_old' && globals.hasOwnProperty(key)) {
 		globals._old[key] = global[key]
