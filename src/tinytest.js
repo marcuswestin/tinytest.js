@@ -1,4 +1,4 @@
-var colour = require('colour')
+var C = require('./color')
 
 var tinytest = module.exports = {
 	runTests: runTests,
@@ -103,7 +103,7 @@ function print() {
 function hijackConsoleLog() {
 	console.log = function() {
 		var args = Array.prototype.slice.call(arguments)
-		args.unshift(grey('console.log():'))
+		args.unshift(C.grey('console.log():'))
 		print.apply(this, args)
 	}
 }
@@ -146,10 +146,11 @@ for (var key in globals) {
 ///////////
 
 var nextTick = function(fn) { setTimeout(fn, 0) }
-
 var isBrowser = (typeof global.window != 'undefined')
+
+// Set up global error handling
+///////////////////////////////
 if (isBrowser) {
-	colour.mode = 'browser'
 	window.addEventListener('error', function (e) {
 	    runner._onTestDone(e.error ? e.error : e)
 	})
@@ -158,18 +159,15 @@ if (isBrowser) {
 		runner._onTestDone(new Error(msg+' ('+url+':'+line+')'))
 		return oldOnError.apply(this, arguments)
 	}
+	
 } else {
-	colour.mode = 'console'
 	process.on('uncaughtException', function (e) {
 		runner._onTestDone(e.error ? e.error : e)
 	})
 }
 
-colour.uninstall()
-var grey = colour.grey
-var green = colour.green
-var yellow = colour.yellow
-var red = colour.red
+// Test runner
+//////////////
 
 var runner = {
 	currentGroup: '',
@@ -191,12 +189,12 @@ var runner = {
 		runner.current = runner.tests[runner.testIndex]
 		if (runner.current.shouldSkip) {
 			runner.current.skipped = true
-			print(grey('Skip: '+runner.current.name))
+			print(C.grey('Skip: '+runner.current.name))
 			runner._runNextTest()
 			return
 		}
 		
-		print(grey('Run: '+runner.current.name))
+		print(C.grey('Run: '+runner.current.name))
 		runner.current.t0 = new Date()
 		runner.failTimeout = setTimeout(function() {
 			runner._onTestDone('Test timed out')
@@ -233,7 +231,7 @@ var runner = {
 	
 	_onTestDone: function(err) {
 		if (!runner.current) {
-			print(red('Error during tests setup:'), '\n', err.stack ? err.stack : err.toString())
+			print(C.red('Error during tests setup:'), '\n', err.stack ? err.stack : err.toString())
 			_exit(1)
 			return
 		}
@@ -248,7 +246,7 @@ var runner = {
 			runner.current.result = false
 			runner.current.message = message
 			runner.current.duration = duration
-			print(red('Fail ' + duration+'ms'), '\n', message)
+			print(C.red('Fail ' + duration+'ms'), '\n', message)
 			runner.hasFailedTest = true
 			if (opts.failFast) {
 				runner._finish()
@@ -258,8 +256,8 @@ var runner = {
 		} else {
 			runner.current.result = true
 			runner.current.duration = duration
-			var durColour = (duration < 50 ? green : duration < 350 ? yellow : red)
-			print(green('Pass'), durColour(duration+'ms'))
+			var durColour = (duration < 50 ? C.green : duration < 350 ? C.yellow : C.red)
+			print(C.green('Pass'), durColour(duration+'ms'))
 		}
 		
 		runner.skipCurrentTest = false
@@ -280,21 +278,21 @@ var runner = {
 		}
 		
 		if (numMissed) {
-			print(yellow('Exited without running '+numMissed+' tests'))
+			print(C.yellow('Exited without running '+numMissed+' tests'))
 		}
 		if (runner.failedTests.length) {
-			print(red(runner.failedTests.length + ' tests failed'))
+			print(C.red(runner.failedTests.length + ' tests failed'))
 		}
 		if (runner.skippedTests.length) {
-			print(yellow(runner.skippedTests.length + ' tests skipped'))
+			print(C.yellow(runner.skippedTests.length + ' tests skipped'))
 		}
 		if (runner.failedTests.length) {
 			_exit(1)
 		} else if (runner.tests.length == 0) {
-			print(yellow('No tests'))
+			print(C.yellow('No tests'))
 			_exit(1)
 		} else {
-			print(green('All done!'), runner.tests.length, 'tests passed.')
+			print(C.green('All done!'), runner.tests.length, 'tests passed.')
 			_exit(0)
 		}
 	}
