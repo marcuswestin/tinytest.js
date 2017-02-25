@@ -276,6 +276,7 @@ var runner = {
 	},
 	
 	_finish: function() {
+		runner.duration = new Date().getTime() - runner.t0
 		var numMissed = (runner.tests.length - runner.testIndex)
 
 		for (var i = 0; i < runner.tests.length; i++) {
@@ -310,26 +311,43 @@ var runner = {
 }
 
 function _exit(exitCode) {
-	// Report sauce labs test results
+	_reportGlobalTests()
+
+	if (opts.onDone) {
+		opts.onDone(exitCode)
+	} else if (global.process && global.process.exit) {
+		process.exit(exitCode)
+	}
+}
+
+function _reportGlobalTests() {
+	// Report global test results
 	// https://wiki.saucelabs.com/display/DOCS/Reporting+JavaScript+Unit+Test+Results+to+Sauce+Labs+Using+a+Custom+Framework
 	// window.global_test_results = { passed:0, failed:1, total:1, duration:0,
 	// 	tests:[{ name:'test', result:false, message:'failed', duration:0 }] }
-	for (var i = 0; i < runner.tests.length; i++) {
-		delete runner.tests[i].fn
-		delete runner.tests[i].t0
-	}
+
 	var numTests = runner.tests.length
-	var numFailed = numFailed
-	var numPassed = numTests - numPassed
+	var numFailed = runner.failedTests.length
+	var numPassed = numTests - numFailed
+	var tests = []
+	for (var i=0; i<runner.tests.length; i++) {
+		var test = runner.tests[i]
+		if (test.skipped || test.result) {
+			// skip it - saucelabs overloads on too many tests reported :/
+			continue
+		}
+		tests.push({
+			name: test.name || '',
+			result: !!test.result,
+			message: test.message || '',
+			duration: test.duration || 0
+		})
+	}
 	global.global_test_results = {
 		total: numTests,
 		failed: numFailed,
 		passed: numPassed,
-		duration: new Date() - runner.t0,
-		tests: runner.tests
-	}
-
-	if (global.process && global.process.exit) {
-		process.exit(exitCode)
+		duration: runner.duration,
+		tests: tests
 	}
 }
