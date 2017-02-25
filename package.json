@@ -15,8 +15,5 @@
   "bugs": {
     "url": "https://github.com/marcuswestin/tinytest.js/issues"
   },
-  "homepage": "https://github.com/marcuswestin/tinytest.js#readme",
-  "devDependencies": {
-    "budo": "^9.3.0"
-  }
+  "homepage": "https://github.com/marcuswestin/tinytest.js#readme"
 }
