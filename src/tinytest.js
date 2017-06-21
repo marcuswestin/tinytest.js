@@ -82,7 +82,10 @@ function print() {
 				fontSize: '12px',
 				padding: '10px',
 				background: 'black',
-				color: 'white'
+				color: 'white',
+				position: 'absolute',
+				top: '0px',
+				left: '0px'
 			})
 			document.body.appendChild(opts.outputEl)
 		}
