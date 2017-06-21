@@ -306,8 +306,12 @@ var runner = {
 		} else if (runner.tests.length == 0) {
 			print(C.yellow('No tests'))
 			_exit(1)
+		} else if (runner.tests.length == runner.skippedTests.length) {
+			print(C.yellow('All tests skipped, no tests passed'))
+			_exit(0)
 		} else {
-			print(C.green('All done!'), runner.tests.length, 'tests passed.')
+			var numPassed = runner.tests.length - runner.skippedTests.length - runner.failedTests.length
+			print(C.green('All done!'), numPassed, 'tests passed.')
 			_exit(0)
 		}
 	}
@@ -331,7 +335,8 @@ function _reportGlobalTests() {
 
 	var numTests = runner.tests.length
 	var numFailed = runner.failedTests.length
-	var numPassed = numTests - numFailed
+	var numSkipped = runner.skippedTests.length
+	var numPassed = numTests - numFailed - numSkipped
 	var tests = []
 	for (var i=0; i<runner.tests.length; i++) {
 		var test = runner.tests[i]
