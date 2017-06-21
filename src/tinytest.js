@@ -245,7 +245,7 @@ var runner = {
 	
 	_onTestDone: function(err) {
 		if (!runner.current) {
-			print(C.red('Error during tests setup:'), '\n', err.stack ? err.stack : err.toString())
+			print(C.red('Error during tests setup:'), '\n', this._errorMessage(err))
 			_exit(1)
 			return
 		}
@@ -256,7 +256,7 @@ var runner = {
 			
 		} else if (err) {
 			assert(!runner.current.result)
-			var message = (err.stack ? err.stack : err.toString())
+			var message = this._errorMessage(err)
 			runner.current.result = false
 			runner.current.message = message
 			runner.current.duration = duration
@@ -276,6 +276,18 @@ var runner = {
 		
 		runner.skipCurrentTest = false
 		nextTick(runner._runNextTest)
+	},
+	
+	_errorMessage: function(err) {
+		if (!err) {
+			return null
+		} else if (err.stack) {
+			return err.stack
+		} else if (err.message) {
+			return err.message
+		} else {
+			return err.toString()
+		}
 	},
 	
 	_finish: function() {
