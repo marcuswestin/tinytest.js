@@ -335,7 +335,7 @@ function _exit(exitCode) {
 	if (opts.onDone) {
 		opts.onDone(exitCode)
 	} else if (global.process && global.process.exit) {
-		process.exit(exitCode)
+		global.process.exit(exitCode)
 	}
 }
 
