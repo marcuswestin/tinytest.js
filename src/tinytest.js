@@ -54,11 +54,12 @@ function _shouldSkipCurrentGroup() {
 }
 
 function test(name, fn) {
+	var testName = (runner.currentGroup ? runner.currentGroup + ' - ' : '') + name
 	if (_shouldSkipCurrentGroup()) {
-		runner.tests.push({ name:runner.currentGroup+' - '+name, shouldSkip:true })
+		runner.tests.push({ name:testName, shouldSkip:true })
 		
 	} else {
-		runner.tests.push({ name:runner.currentGroup+' - '+name, fn:fn })		
+		runner.tests.push({ name:testName, fn:fn })
 	}
 }
 
