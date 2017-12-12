@@ -6,7 +6,7 @@ var tinytest = module.exports = {
 	assert: assert,
 	print: print,
 	noConflict: noConflict,
-	hijackConsoleLog: hijackConsoleLog
+	hijackConsoleLog: hijackConsoleLog,
 }
 
 function runTests(_opts) {
@@ -134,7 +134,7 @@ function log() {
 function noConflict() {
 	for (var key in globals) {
 		if (key != '_old' && globals.hasOwnProperty(key)) {
-			this[key] = globals._old[key]
+			global[key] = globals._old[key]
 		}
 	}
 }
